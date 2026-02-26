@@ -15,6 +15,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQu
 from aiogram.utils.callback_data import CallbackData
 from data import botToken
 import os
+import asyncio
 import subprocess
 import platform
 import psutil
@@ -555,10 +556,49 @@ async def info(message: types.Message):
 # ЗАПУСК БОТА
 # =============================================================================
 
+async def cli_loop():
+    """Асинхронный цикл для ввода команд в консоли"""
+    loop = asyncio.get_event_loop()
+    print(f"\n{EMOJIS['robot']} Интерактивный режим активен. Введите 'exit' для выхода или любую команду ОС.\n")
+    
+    while True:
+        try:
+            # Используем run_in_executor для неблокирующего ввода
+            command = await loop.run_in_executor(None, input, "Jarvis > ")
+            
+            if not command.strip():
+                continue
+                
+            if command.lower() in ['exit', 'quit', 'stop']:
+                print(f"{EMOJIS['warning']} Завершение работы...")
+                os._exit(0) # Жесткий выход для завершения всего процесса
+                
+            # Выполняем команду
+            process = await asyncio.create_subprocess_shell(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await process.communicate()
+            
+            if stdout:
+                print(stdout.decode().strip())
+            if stderr:
+                print(f"{EMOJIS['error']} Error: {stderr.decode().strip()}")
+                
+        except EOFError:
+            break
+        except Exception as e:
+            print(f"{EMOJIS['error']} Ошибка CLI: {e}")
+
 async def on_startup(dp):
     """Функция запуска бота"""
     logger.info(f"{EMOJIS['robot']} Jarvis Bot запущен и готов к работе!")
     print(f"{EMOJIS['robot']} Jarvis Bot запущен и готов к работе!")
+    
+    # Запускаем CLI цикл в фоне
+    asyncio.create_task(cli_loop())
 
 if __name__ == "__main__":
     print(f"{EMOJIS['robot']} Запуск Jarvis Bot...")
