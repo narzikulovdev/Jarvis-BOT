@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  jarvis-bot:
+    build: .
+    container_name: jarvis-bot
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      - DISPLAY=${DISPLAY:-:0}
+      - XDG_RUNTIME_DIR=/run/user/1000
+    volumes:
+      # Audio control
+      - /dev/snd:/dev/snd
+      # X11 for screenshots
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # D-Bus for playerctl (media control)
+      - /run/user/1000/bus:/run/user/1000/bus
+    devices:
+      - /dev/snd:/dev/snd
+    group_add:
+      - audio
+      - video
